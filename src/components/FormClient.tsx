@@ -29,6 +29,7 @@ export default function FormClient() {
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [oferteList, setOferteList] = useState<File[]>([]);
+  const [cuiExistent, setCuiExistent] = useState(false);
 
   function setError(name: string, msg?: string) {
     setFieldErrors((prev) => {
@@ -37,6 +38,47 @@ export default function FormClient() {
       else delete next[name];
       return next;
     });
+  }
+
+  async function handleCuiBlur(e: React.FocusEvent<HTMLInputElement>) {
+    const cui = e.target.value.replace(/\D+/g, '').trim();
+    if (!cui) return;
+    try {
+      const res = await fetch(`/api/lookup?cui=${encodeURIComponent(cui)}`);
+      if (!res.ok) return;
+      const json = await res.json();
+      if (!json.found || !json.data) return;
+      const d = json.data;
+      const form = formRef.current;
+      if (!form) return;
+      // Pre-fill fields
+      (form.elements.namedItem('denumireFirma') as HTMLInputElement).value = d.denumire_firma ?? '';
+      (form.elements.namedItem('numeAdmin') as HTMLInputElement).value = d.administrator ?? '';
+      (form.elements.namedItem('cnp') as HTMLInputElement).value = d.cnp ?? '';
+      (form.elements.namedItem('email') as HTMLInputElement).value = d.email ?? '';
+      (form.elements.namedItem('telefon') as HTMLInputElement).value = d.telefon ?? '';
+      (form.elements.namedItem('activitate') as HTMLTextAreaElement).value = d.activitate ?? '';
+      (form.elements.namedItem('localitateJudet') as HTMLInputElement).value = d.localitate_judet ?? '';
+      if (d.observatii_oferte) {
+        (form.elements.namedItem('observatiiOferte') as HTMLTextAreaElement).value = d.observatii_oferte;
+      }
+      // Radio: aAvutFirma
+      const aAvutFirmaVal = d.a_avut_firma ? 'Da' : 'Nu';
+      const radioAAvut = form.querySelector(`input[name="aAvutFirma"][value="${aAvutFirmaVal}"]`) as HTMLInputElement | null;
+      if (radioAAvut) radioAAvut.checked = true;
+      // Radio: cofinantare
+      const radioCofinantare = form.querySelector(`input[name="cofinantare"][value="${d.cofinantare}"]`) as HTMLInputElement | null;
+      if (radioCofinantare) radioCofinantare.checked = true;
+      // Radio: mentinereLuni
+      const radioMentinere = form.querySelector(`input[name="mentinereLuni"][value="${d.mentinere_luni}"]`) as HTMLInputElement | null;
+      if (radioMentinere) radioMentinere.checked = true;
+      // Radio: sumaForfetara
+      const radioForfetara = form.querySelector(`input[name="sumaForfetara"][value="${d.suma_forfetara}"]`) as HTMLInputElement | null;
+      if (radioForfetara) radioForfetara.checked = true;
+      setCuiExistent(true);
+    } catch {
+      // ignore lookup errors
+    }
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -110,6 +152,7 @@ export default function FormClient() {
               placeholder="ex: 12345678"
               required
               className="input"
+              onBlur={handleCuiBlur}
             />
             {fieldErrors['cui'] && <p className="field-error">{fieldErrors['cui']}</p>}
           </div>
@@ -358,6 +401,13 @@ export default function FormClient() {
         </label>
       </section>
 
+      {cuiExistent && (
+        <div className="rounded-md border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-800">
+          <strong>Dosar existent găsit.</strong> Datele au fost precompletate din dosarul anterior
+          asociat acestui CUI. La trimitere, dosarul va fi actualizat.
+        </div>
+      )}
+
       <div className="flex justify-end">
         <button type="submit" className="btn-primary" disabled={submitting}>
           {submitting ? 'Se trimite…' : 'Trimite documentele'}
@@ -365,4 +415,4 @@ export default function FormClient() {
       </div>
     </form>
   );
-}
+      }
