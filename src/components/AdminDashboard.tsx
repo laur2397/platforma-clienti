@@ -144,9 +144,9 @@ export default function AdminDashboard({ username }: { username: string }) {
         <div className="mx-auto max-w-6xl px-4 py-6">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                       <div>
-                                <h1 className="text-2xl font-bold text-slate-900">Panou administrator</h1>h1>
-                                <p className="text-sm text-slate-500">Autentificat ca: {username}</p>p>
-                      </div>div>
+                                <h1 className="text-2xl font-bold text-slate-900">Panou administrator</h1>
+                                <p className="text-sm text-slate-500">Autentificat ca: {username}</p>
+                      </div>
                       <div className="flex gap-2">
                                 <button
                                               onClick={exportCSV}
@@ -155,14 +155,14 @@ export default function AdminDashboard({ username }: { username: string }) {
                                               title="Descarca raport Excel cu toate dosarele"
                                             >
                                             Export Excel
-                                </button>button>
-                                <button onClick={logout} className="btn-secondary">Deconectare</button>button>
-                      </div>div>
-              </div>div>
+                                </button>
+                                <button onClick={logout} className="btn-secondary">Deconectare</button>
+                      </div>
+              </div>
         
               <form onSubmit={search} className="card mb-4 flex flex-wrap items-end gap-2">
                       <div className="flex-1 min-w-[200px]">
-                                <label className="label" htmlFor="q">Cautare dupa CUI sau denumire firma</label>label>
+                                <label className="label" htmlFor="q">Cautare dupa CUI sau denumire firma</label>
                                 <input
                                               id="q"
                                               className="input"
@@ -170,8 +170,8 @@ export default function AdminDashboard({ username }: { username: string }) {
                                               onChange={(e) => setQ(e.target.value)}
                                               placeholder="ex: 12345678 sau EXEMPLU"
                                             />
-                      </div>div>
-                      <button className="btn-primary">Cauta</button>button>
+                      </div>
+                      <button className="btn-primary">Cauta</button>
                       <button
                                   type="button"
                                   className="btn-secondary"
@@ -181,87 +181,87 @@ export default function AdminDashboard({ username }: { username: string }) {
                                   }}
                                 >
                                 Reset
-                      </button>button>
-              </form>form>
+                      </button>
+              </form>
         
           {err && (
                   <div className="mb-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                     {err}
-                  </div>div>
+                  </div>
               )}
         
               <div className="mb-3 flex flex-wrap gap-2 text-xs">
-                      <span className="badge bg-slate-100 text-slate-700">Total: {items.length}</span>span>
+                      <span className="badge bg-slate-100 text-slate-700">Total: {items.length}</span>
                 {Object.entries(totals).map(([s, n]) => (
                     <span key={s} className={`badge ${STATUS_COLORS[s] ?? 'bg-slate-100 text-slate-700'}`}>
                       {s}: {n}
-                    </span>span>
+                    </span>
                   ))}
-              </div>div>
+              </div>
         
               <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
                       <table className="min-w-full divide-y divide-slate-200 text-sm">
                                 <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                                             <tr>
-                                                          <th className="px-3 py-2">CUI</th>th>
-                                                          <th className="px-3 py-2">Denumire</th>th>
-                                                          <th className="px-3 py-2">Administrator</th>th>
-                                                          <th className="px-3 py-2">Contact</th>th>
-                                                          <th className="px-3 py-2">Cofinantare</th>th>
-                                                          <th className="px-3 py-2">Mentinere</th>th>
-                                                          <th className="px-3 py-2">Forfetara</th>th>
-                                                          <th className="px-3 py-2">Fisiere</th>th>
-                                                          <th className="px-3 py-2">Status</th>th>
-                                                          <th className="px-3 py-2">Transmis</th>th>
-                                                          <th className="px-3 py-2 text-right">Actiuni</th>th>
-                                            </tr>tr>
-                                </thead>thead>
+                                                          <th className="px-3 py-2">CUI</th>
+                                                          <th className="px-3 py-2">Denumire</th>
+                                                          <th className="px-3 py-2">Administrator</th>
+                                                          <th className="px-3 py-2">Contact</th>
+                                                          <th className="px-3 py-2">Cofinantare</th>
+                                                          <th className="px-3 py-2">Mentinere</th>
+                                                          <th className="px-3 py-2">Forfetara</th>
+                                                          <th className="px-3 py-2">Fisiere</th>
+                                                          <th className="px-3 py-2">Status</th>
+                                                          <th className="px-3 py-2">Transmis</th>
+                                                          <th className="px-3 py-2 text-right">Actiuni</th>
+                                            </tr>
+                                </thead>
                                 <tbody className="divide-y divide-slate-100">
                                   {loading && (
                         <tr>
                                         <td colSpan={11} className="px-3 py-6 text-center text-slate-500">
                                                           Se incarca...
-                                        </td>td>
-                        </tr>tr>
+                                        </td>
+                        </tr>
                                             )}
                                   {!loading && items.length === 0 && (
                         <tr>
                                         <td colSpan={11} className="px-3 py-6 text-center text-slate-500">
                                                           Niciun dosar transmis.
-                                        </td>td>
-                        </tr>tr>
+                                        </td>
+                        </tr>
                                             )}
                                   {!loading &&
                                                   items.map((it) => (
                                                                     <tr key={it.id} className="hover:bg-slate-50">
-                                                                                      <td className="px-3 py-2 font-mono">{it.cui}</td>td>
-                                                                                      <td className="px-3 py-2 font-medium text-slate-900">{it.denumire_firma}</td>td>
-                                                                                      <td className="px-3 py-2">{it.administrator}</td>td>
+                                                                                      <td className="px-3 py-2 font-mono">{it.cui}</td>
+                                                                                      <td className="px-3 py-2 font-medium text-slate-900">{it.denumire_firma}</td>
+                                                                                      <td className="px-3 py-2">{it.administrator}</td>
                                                                                       <td className="px-3 py-2 text-xs">
-                                                                                                          <div>{it.email}</div>div>
-                                                                                                          <div className="text-slate-500">{it.telefon}</div>div>
-                                                                                        </td>td>
-                                                                                      <td className="px-3 py-2">{it.cofinantare}% ({it.punctaj_cofinantare}p)</td>td>
-                                                                                      <td className="px-3 py-2">{it.mentinere_luni} luni ({it.punctaj_mentinere}p)</td>td>
-                                                                                      <td className="px-3 py-2">{it.suma_forfetara}</td>td>
-                                                                                      <td className="px-3 py-2">{it.nr_fisiere} <span className="text-slate-400">({it.nr_oferte} of.)</span>span></td>td>
+                                                                                                          <div>{it.email}</div>
+                                                                                                          <div className="text-slate-500">{it.telefon}</div>
+                                                                                        </td>
+                                                                                      <td className="px-3 py-2">{it.cofinantare}% ({it.punctaj_cofinantare}p)</td>
+                                                                                      <td className="px-3 py-2">{it.mentinere_luni} luni ({it.punctaj_mentinere}p)</td>
+                                                                                      <td className="px-3 py-2">{it.suma_forfetara}</td>
+                                                                                      <td className="px-3 py-2">{it.nr_fisiere} <span className="text-slate-400">({it.nr_oferte} of.)</span></td>
                                                                                       <td className="px-3 py-2">
                                                                                                           <span className={`badge ${STATUS_COLORS[it.status] ?? 'bg-slate-100 text-slate-700'}`}>
                                                                                                             {it.status}
-                                                                                                            </span>span>
-                                                                                        </td>td>
-                                                                                      <td className="px-3 py-2 text-xs text-slate-500">{fmtDate(it.creat_la)}</td>td>
+                                                                                                            </span>
+                                                                                        </td>
+                                                                                      <td className="px-3 py-2 text-xs text-slate-500">{fmtDate(it.creat_la)}</td>
                                                                                       <td className="px-3 py-2 text-right">
                                                                                                           <div className="flex justify-end gap-1">
-                                                                                                                                <a href={`/admin/dosar/${it.id}`} className="btn-secondary text-xs">Vezi dosar</a>a>
-                                                                                                                                <a href={`/api/admin/dosar/${it.id}/zip`} className="btn-primary text-xs">ZIP</a>a>
-                                                                                                            </div>div>
-                                                                                        </td>td>
-                                                                    </tr>tr>
+                                                                                                                                <a href={`/admin/dosar/${it.id}`} className="btn-secondary text-xs">Vezi dosar</a>
+                                                                                                                                <a href={`/api/admin/dosar/${it.id}/zip`} className="btn-primary text-xs">ZIP</a>
+                                                                                                            </div>
+                                                                                        </td>
+                                                                    </tr>
                                                                   ))}
-                                </tbody>tbody>
-                      </table>table>
-              </div>div>
-        </div>div>
+                                </tbody>
+                      </table>
+              </div>
+        </div>
       );
 }</div>
