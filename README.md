@@ -91,6 +91,29 @@ uploads/
 - Clienții nu au acces la documentele altora — singurul endpoint public este
   `POST /api/submit`, restul rutelor cer sesiune de admin.
 
+## Rulează direct din GitHub (Codespaces, fără setup local)
+
+Pentru a vedea aplicația „live" fără să instalezi nimic pe calculator:
+
+1. Pe GitHub, pe repo-ul `platforma-clienti`, click pe butonul verde **Code**.
+2. Tab-ul **Codespaces → Create codespace on `<branch>`**.
+3. GitHub deschide automat un editor în browser și rulează `.devcontainer/setup.sh`:
+   instalează dependențele, generează un `SESSION_SECRET` aleator și o parolă
+   admin random, creează contul de admin în SQLite și pornește `npm run dev`.
+4. După ~30-60 de secunde se deschide automat o filă cu aplicația. Credențialele
+   admin (utilizator + parolă) sunt afișate în terminalul Codespace-ului și în
+   fișierul `.env.credentials`.
+5. **Pentru un link partajabil cu oricine** (default URL-ul e privat, doar tu îl
+   poți accesa cu sesiunea ta GitHub): mergi în tab-ul **PORTS** din partea de
+   jos a editorului, click dreapta pe portul 3000 → **Port Visibility → Public**.
+   Apoi copiezi URL-ul `https://*-3000.app.github.dev`.
+
+Limite Codespaces: aplicația rulează cât timp Codespace-ul e activ. Se oprește
+automat după 30 min fără activitate, dar se pornește la fel de simplu cu un
+click pe Codespace-ul existent. Toate fișierele uploadate rămân salvate între
+porniri (în volumul Codespace-ului). Pentru utilizare permanentă (producție),
+folosește Railway — instrucțiuni mai jos.
+
 ## Deploy pe Railway (URL public)
 
 Repo-ul include `railway.json` și suport pentru un singur volum persistent
