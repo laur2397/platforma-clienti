@@ -2,7 +2,13 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { getExtension, sanitizeFilename } from './sanitize';
 
-export const UPLOADS_ROOT = path.join(process.cwd(), 'uploads');
+// În producție montează un volum persistent și setează STORAGE_DIR.
+// Local, fallback la process.cwd().
+const STORAGE_ROOT = process.env.STORAGE_DIR
+  ? path.resolve(process.env.STORAGE_DIR)
+  : process.cwd();
+
+export const UPLOADS_ROOT = path.join(STORAGE_ROOT, 'uploads');
 
 export const SUBFOLDERS = {
   date: '01_Date_client',

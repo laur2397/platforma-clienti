@@ -2,7 +2,13 @@ import Database from 'better-sqlite3';
 import path from 'node:path';
 import fs from 'node:fs';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+// În producție (Railway/Fly/etc.) montează un volum persistent și setează
+// STORAGE_DIR=/app/storage. Local, fallback la process.cwd().
+const STORAGE_ROOT = process.env.STORAGE_DIR
+  ? path.resolve(process.env.STORAGE_DIR)
+  : process.cwd();
+
+const DATA_DIR = path.join(STORAGE_ROOT, 'data');
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }

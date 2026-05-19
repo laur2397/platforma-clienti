@@ -91,6 +91,42 @@ uploads/
 - Clienții nu au acces la documentele altora — singurul endpoint public este
   `POST /api/submit`, restul rutelor cer sesiune de admin.
 
+## Deploy pe Railway (URL public)
+
+Repo-ul include `railway.json` și suport pentru un singur volum persistent
+(prin variabila `STORAGE_DIR`), astfel încât `data/` (SQLite) și `uploads/`
+(documente clienți) supraviețuiesc redeploy-urilor.
+
+1. Mergi pe https://railway.com → **Login with GitHub** → autorizează accesul
+   la repo-ul `laur2397/platforma-clienti`.
+2. **New Project → Deploy from GitHub repo** și alege `platforma-clienti`.
+   Railway detectează Next.js și începe primul build (va eșua până nu setezi
+   variabilele — e ok).
+3. În tab-ul **Variables** adaugă:
+   - `SESSION_SECRET` = un string random de **minim 32 caractere** (generează-l
+     cu: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`)
+   - `ADMIN_USERNAME` = numele tău de admin (ex. `admin`)
+   - `ADMIN_PASSWORD` = parola de admin (min. 8 caractere)
+   - `STORAGE_DIR` = `/app/storage`
+   - `NODE_ENV` = `production`
+   - `MAX_FILE_SIZE_MB` = `15` (opțional)
+4. În tab-ul **Settings → Volumes → New Volume**:
+   - Mount path: `/app/storage`
+   - Lasă size-ul implicit (poți crește ulterior).
+5. **Settings → Networking → Generate Domain** ca să primești un URL public
+   de forma `platforma-clienti-production.up.railway.app`.
+6. Apasă **Deploy** (sau commit nou pe branch). La start, Railway rulează
+   automat `npm run init-admin && npm start`, deci contul tău de admin este
+   creat/actualizat din variabilele de mediu, fără pași manuali.
+7. Acces:
+   - Formular client: `https://<domeniul-tau>/`
+   - Panou admin: `https://<domeniul-tau>/admin` (login cu `ADMIN_USERNAME` /
+     `ADMIN_PASSWORD`).
+
+**Important:** dacă schimbi `ADMIN_PASSWORD` în Variables și redeploy-uiești,
+parola contului de admin este sincronizată automat (init-admin rulează la
+fiecare pornire și este idempotent).
+
 ## Extensii uzuale (după MVP)
 
 - Adăugare câmpuri suplimentare în formular fără modificări de schemă (există
