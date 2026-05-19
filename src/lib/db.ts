@@ -80,6 +80,15 @@ if (!cols.some((c) => c.name === 'punctaj_mentinere')) {
     UPDATE dosare SET punctaj_mentinere = CASE WHEN mentinere_luni = 30 THEN 10 ELSE 0 END;
   `);
 }
+if (!cols.some((c) => c.name === 'ip_address')) {
+  db.exec('ALTER TABLE dosare ADD COLUMN ip_address TEXT');
+}
+if (!cols.some((c) => c.name === 'user_agent')) {
+  db.exec('ALTER TABLE dosare ADD COLUMN user_agent TEXT');
+}
+if (!cols.some((c) => c.name === 'updated_at')) {
+  db.exec('ALTER TABLE dosare ADD COLUMN updated_at TEXT');
+}
 
 export default db;
 
@@ -115,4 +124,7 @@ export type DosarRow = {
   nr_fisiere: number;
   status: Status;
   creat_la: string;
+  ip_address?: string | null;
+  user_agent?: string | null;
+  updated_at?: string | null;
 };
