@@ -12,13 +12,22 @@ const STATUS_COLORS: Record<string, string> = {
     'Respins intern': 'bg-red-100 text-red-700',
 };
 
-function fmtDate(iso: string): string {
+function fmtDate(iso: string | null | undefined): string {
+    if (!iso) return '—';
     try {
           const d = new Date(iso);
           return d.toLocaleString('ro-RO');
     } catch {
           return iso;
     }
+}
+
+function getDevice(ua: string | null | undefined): string {
+    if (!ua) return '—';
+    const u = ua.toLowerCase();
+    if (/bot|crawl|spider|slurp|facebook|preview/i.test(u)) return 'Bot';
+    if (/mobile|android|iphone|ipad|ipod|windows phone/i.test(u)) return 'Mobil';
+    return 'Desktop';
 }
 
 export default function AdminDashboard({ username }: { username: string }) {
@@ -77,6 +86,7 @@ export default function AdminDashboard({ username }: { username: string }) {
       URL.revokeObjectURL(a.href);
     } catch{alert('Eroare la export.');}
   }
+
   function exportCSV() {
         const headers = [
                 'Nr. crt.',
@@ -133,7 +143,7 @@ export default function AdminDashboard({ username }: { username: string }) {
                                  );
 
       // BOM UTF-8 pentru caractere romanesti corecte in Excel
-      const csv = '﻿' + [headers.map(esc).join(','), ...rows].join('\r\n');
+      const csv = '\uFEFF' + [headers.map(esc).join(','), ...rows].join('\r\n');
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -226,20 +236,22 @@ export default function AdminDashboard({ username }: { username: string }) {
                                                           <th className="px-3 py-2">Fisiere</th>
                                                           <th className="px-3 py-2">Status</th>
                                                           <th className="px-3 py-2">Transmis</th>
+                                                          <th className="px-3 py-2">IP</th>
+                                                          <th className="px-3 py-2">Dispozitiv</th>
                                                           <th className="px-3 py-2 text-right">Actiuni</th>
                                             </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                   {loading && (
                         <tr>
-                                        <td colSpan={11} className="px-3 py-6 text-center text-slate-500">
+                                        <td colSpan={13} className="px-3 py-6 text-center text-slate-500">
                                                           Se incarca...
                                         </td>
                         </tr>
                                             )}
                                   {!loading && items.length === 0 && (
                         <tr>
-                                        <td colSpan={11} className="px-3 py-6 text-center text-slate-500">
+                                        <td colSpan={13} className="px-3 py-6 text-center text-slate-500">
                                                           Niciun dosar transmis.
                                         </td>
                         </tr>
@@ -263,7 +275,18 @@ export default function AdminDashboard({ username }: { username: string }) {
                                                                                                             {it.status}
                                                                                                             </span>
                                                                                         </td>
-                                                                                      <td className="px-3 py-2 text-xs text-slate-500">{fmtDate(it.creat_la)}</td>
+                                                                                      <td className="px-3 py-2 text-xs text-slate-500">
+                                                                                        <div>{fmtDate(it.creat_la)}</div>
+                                                                                        {it.updated_at && (
+                                                                                          <div className="mt-0.5">
+                                                                                            <span className="rounded bg-yellow-100 px-1 py-0.5 text-yellow-700 text-[10px]">
+                                                                                              upd: {fmtDate(it.updated_at)}
+                                                                                            </span>
+                                                                                          </div>
+                                                                                        )}
+                                                                                      </td>
+                                                                                      <td className="px-3 py-2 text-xs text-slate-500 font-mono">{it.ip_address ?? '—'}</td>
+                                                                                      <td className="px-3 py-2 text-xs">{getDevice(it.user_agent)}</td>
                                                                                       <td className="px-3 py-2 text-right">
                                                                                                           <div className="flex justify-end gap-1">
                                                                                                                                 <a href={`/admin/dosar/${it.id}`} className="btn-secondary text-xs">Vezi dosar</a>
