@@ -64,6 +64,19 @@ export default function AdminDashboard({ username }: { username: string }) {
         load(q.trim());
   }
 
+  async function exportWord() {
+    try {
+      const url=`/api/admin/export-word${q?`?q=${encodeURIComponent(q)}`:''}`;
+      const res=await fetch(url);
+      if(!res.ok){alert('Eroare la generarea raportului Word.');return;}
+      const blob=await res.blob();
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download=`raport-dosare-${new Date().toISOString().slice(0,10)}.docx`;
+      document.body.appendChild(a);a.click();document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    } catch{alert('Eroare la export.');}
+  }
   function exportCSV() {
         const headers = [
                 'Nr. crt.',
@@ -149,12 +162,12 @@ export default function AdminDashboard({ username }: { username: string }) {
                       </div>
                       <div className="flex gap-2">
                                 <button
-                                              onClick={exportCSV}
+                                              onClick={exportWord}
                                               disabled={items.length === 0}
                                               className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                                              title="Descarca raport Excel cu toate dosarele"
+                                              title="Descarca raport Word cu toate dosarele"
                                             >
-                                            Export Excel
+                                            Export Word
                                 </button>
                                 <button onClick={logout} className="btn-secondary">Deconectare</button>
                       </div>

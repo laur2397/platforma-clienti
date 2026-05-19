@@ -28,6 +28,7 @@ export default function FormClient() {
   const [submitting, setSubmitting] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [oferteList, setOferteList] = useState<File[]>([]);
 
   function setError(name: string, msg?: string) {
     setFieldErrors((prev) => {
@@ -46,6 +47,7 @@ export default function FormClient() {
     setFieldErrors({});
 
     const fd = new FormData(formRef.current);
+    oferteList.forEach(f => fd.append('oferte', f));
 
     // Validări minime client-side (server-ul re-validează).
     const cui = String(fd.get('cui') ?? '').replace(/\D+/g, '');
@@ -246,17 +248,31 @@ export default function FormClient() {
           fotografii clare.
         </p>
         <div>
-          <label htmlFor="oferte" className="label">
+          <label htmlFor="oferte-add" className="label">
             Oferte pentru echipamente, bunuri sau servicii (PDF, DOC, DOCX, JPG, PNG)
           </label>
           <input
-            id="oferte"
-            name="oferte"
+            id="oferte-add"
             type="file"
             multiple
-            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png"
-            className="block w-full text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-brand-600 file:px-4 file:py-2 file:text-white hover:file:bg-brand-700"
+            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
+            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 cursor-pointer border border-gray-300 rounded p-1"
+            onChange={(e)=>{
+              const picked=Array.from(e.target.files||[]);
+              if(picked.length){setOferteList(prev=>[...prev,...picked]);e.target.value='';}
+            }}
           />
+          {oferteList.length>0&&(
+            <ul className="mt-2 space-y-1">
+              {oferteList.map((f,idx)=>(
+                <li key={idx} className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded px-3 py-1 text-sm">
+                  <span className="truncate max-w-xs text-gray-700">{f.name}</span>
+                  <button type="button" onClick={()=>setOferteList(prev=>prev.filter((_,i)=>i!==idx))} className="ml-2 text-red-500 hover:text-red-700 font-bold">&#x2715;</button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="text-xs text-gray-500 mt-1">{oferteList.length===0?'Niciun fisier selectat':oferteList.length+' fisier(e) selectat(e)'}</p>
         </div>
         <div className="mt-4">
           <label htmlFor="observatiiOferte" className="label">
