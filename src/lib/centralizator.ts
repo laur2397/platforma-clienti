@@ -14,6 +14,7 @@ export type CentralizatorData = {
   cofinantare_procent: number;
   punctaj_cofinantare: number;
   mentinere_locuri_munca_luni: number;
+  punctaj_mentinere: number;
   suma_forfetara_80000_lei: string;
   observatii_oferte: string;
   fisier_ci: string | null;
@@ -49,6 +50,7 @@ export function writeCSV(file: string, data: CentralizatorData) {
     ['Cofinanțare (%)', String(data.cofinantare_procent)],
     ['Punctaj cofinanțare', String(data.punctaj_cofinantare)],
     ['Menținere locuri de muncă (luni)', String(data.mentinere_locuri_munca_luni)],
+    ['Punctaj menținere', String(data.punctaj_mentinere)],
     ['Sumă forfetară (max 80.000 lei)', data.suma_forfetara_80000_lei],
     ['Observații oferte', data.observatii_oferte],
     ['Fișier CI', data.fisier_ci ?? ''],
@@ -84,7 +86,7 @@ export function writeCentralizatorTxt(file: string, data: CentralizatorData) {
     '',
     '— OPȚIUNI PROIECT —',
     `Cofinanțare: ${data.cofinantare_procent}% (${data.punctaj_cofinantare} puncte)`,
-    `Menținere locuri de muncă: ${data.mentinere_locuri_munca_luni} luni`,
+    `Menținere locuri de muncă: ${data.mentinere_locuri_munca_luni} luni (${data.punctaj_mentinere} puncte)`,
     `Sumă forfetară (max 80.000 lei): ${data.suma_forfetara_80000_lei}`,
     '',
     '— OBSERVAȚII —',

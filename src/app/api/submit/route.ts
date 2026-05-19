@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import path from 'node:path';
 import fs from 'node:fs';
 import db from '@/lib/db';
-import { FormSchema, punctajCofinantare } from '@/lib/schema';
+import { FormSchema, punctajCofinantare, punctajMentinere } from '@/lib/schema';
 import {
   buildFolderName,
   sanitizeSegment,
@@ -191,6 +191,7 @@ export async function POST(req: NextRequest) {
     cofinantare_procent: data.cofinantare,
     punctaj_cofinantare: punctajCofinantare(data.cofinantare),
     mentinere_locuri_munca_luni: data.mentinereLuni,
+    punctaj_mentinere: punctajMentinere(data.mentinereLuni),
     suma_forfetara_80000_lei: data.sumaForfetara,
     observatii_oferte: data.observatiiOferte ?? '',
     fisier_ci: ciFinalName,
@@ -215,10 +216,10 @@ export async function POST(req: NextRequest) {
       folder_name, cui, denumire_firma, a_avut_firma,
       administrator, cnp, email, telefon,
       activitate, localitate_judet,
-      cofinantare, punctaj_cofinantare, mentinere_luni, suma_forfetara,
+      cofinantare, punctaj_cofinantare, mentinere_luni, punctaj_mentinere, suma_forfetara,
       observatii_oferte, fisier_ci, nr_oferte, nr_fisiere,
       status, creat_la
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Primit', ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Primit', ?)
   `);
 
   stmt.run(
@@ -235,6 +236,7 @@ export async function POST(req: NextRequest) {
     central.cofinantare_procent,
     central.punctaj_cofinantare,
     central.mentinere_locuri_munca_luni,
+    central.punctaj_mentinere,
     central.suma_forfetara_80000_lei,
     central.observatii_oferte,
     central.fisier_ci,

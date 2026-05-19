@@ -57,6 +57,7 @@ db.exec(`
     cofinantare INTEGER NOT NULL,
     punctaj_cofinantare INTEGER NOT NULL,
     mentinere_luni INTEGER NOT NULL,
+    punctaj_mentinere INTEGER NOT NULL DEFAULT 0,
     suma_forfetara TEXT NOT NULL,
     observatii_oferte TEXT,
     fisier_ci TEXT,
@@ -69,6 +70,16 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_dosare_cui ON dosare(cui);
   CREATE INDEX IF NOT EXISTS idx_dosare_denumire ON dosare(denumire_firma);
 `);
+
+// Migrare pentru baze de date create înainte de adăugarea coloanei
+// punctaj_mentinere. Calculează retroactiv: 30 luni → 10, restul → 0.
+const cols = db.prepare(`PRAGMA table_info(dosare)`).all() as { name: string }[];
+if (!cols.some((c) => c.name === 'punctaj_mentinere')) {
+  db.exec(`
+    ALTER TABLE dosare ADD COLUMN punctaj_mentinere INTEGER NOT NULL DEFAULT 0;
+    UPDATE dosare SET punctaj_mentinere = CASE WHEN mentinere_luni = 30 THEN 10 ELSE 0 END;
+  `);
+}
 
 export default db;
 
@@ -96,6 +107,7 @@ export type DosarRow = {
   cofinantare: number;
   punctaj_cofinantare: number;
   mentinere_luni: number;
+  punctaj_mentinere: number;
   suma_forfetara: string;
   observatii_oferte: string | null;
   fisier_ci: string | null;

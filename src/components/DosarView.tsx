@@ -148,7 +148,10 @@ export default function DosarView({ id }: { id: string }) {
               k="Cofinanțare"
               v={`${dosar.cofinantare}% (${dosar.punctaj_cofinantare} puncte)`}
             />
-            <Item k="Menținere angajați" v={`${dosar.mentinere_luni} luni`} />
+            <Item
+              k="Menținere angajați"
+              v={`${dosar.mentinere_luni} luni (${dosar.punctaj_mentinere} puncte)`}
+            />
             <Item k="Sumă forfetară (max 80.000 lei)" v={dosar.suma_forfetara} />
             <Item k="Data transmiterii" v={fmtDate(dosar.creat_la)} />
           </dl>

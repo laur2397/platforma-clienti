@@ -62,3 +62,9 @@ export function punctajCofinantare(cof: number): number {
   // Conform cerinței: 10% → 10pct, 15% → 15pct, 20% → 20pct.
   return cof;
 }
+
+export function punctajMentinere(luni: number): number {
+  // 24 luni → 0 puncte, 30 luni → 10 puncte.
+  if (luni === 30) return 10;
+  return 0;
+}

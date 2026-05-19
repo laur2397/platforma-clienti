@@ -12,8 +12,8 @@ const COFINANTARE_OPTIONS = [
 ];
 
 const MENTINERE_OPTIONS = [
-  { value: 24, label: '24 luni' },
-  { value: 30, label: '30 luni' },
+  { value: 24, label: '24 luni – 0 puncte' },
+  { value: 30, label: '30 luni – 10 puncte' },
 ];
 
 const FORFETARA_OPTIONS = [

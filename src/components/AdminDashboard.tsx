@@ -164,7 +164,7 @@ export default function AdminDashboard({ username }: { username: string }) {
                     <div className="text-slate-500">{it.telefon}</div>
                   </td>
                   <td className="px-3 py-2">{it.cofinantare}% ({it.punctaj_cofinantare}p)</td>
-                  <td className="px-3 py-2">{it.mentinere_luni} luni</td>
+                  <td className="px-3 py-2">{it.mentinere_luni} luni ({it.punctaj_mentinere}p)</td>
                   <td className="px-3 py-2">{it.suma_forfetara}</td>
                   <td className="px-3 py-2">{it.nr_fisiere} <span className="text-slate-400">({it.nr_oferte} of.)</span></td>
                   <td className="px-3 py-2">
