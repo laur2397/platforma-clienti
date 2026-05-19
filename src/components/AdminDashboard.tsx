@@ -68,11 +68,11 @@ export default function AdminDashboard({ username }: { username: string }) {
     try {
       const url=`/api/admin/export-word${q?`?q=${encodeURIComponent(q)}`:''}`;
       const res=await fetch(url);
-      if(!res.ok){alert('Eroare la generarea raportului Word.');return;}
+      if(!res.ok){alert('Eroare la generarea raportului Excel.');return;}
       const blob=await res.blob();
       const a=document.createElement('a');
       a.href=URL.createObjectURL(blob);
-      a.download=`raport-dosare-${new Date().toISOString().slice(0,10)}.docx`;
+      a.download=`centralizator-${new Date().toISOString().slice(0,10)}.xlsx`;
       document.body.appendChild(a);a.click();document.body.removeChild(a);
       URL.revokeObjectURL(a.href);
     } catch{alert('Eroare la export.');}
@@ -165,9 +165,9 @@ export default function AdminDashboard({ username }: { username: string }) {
                                               onClick={exportWord}
                                               disabled={items.length === 0}
                                               className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                                              title="Descarca raport Word cu toate dosarele"
+                                              title="Descarca raport Excel cu toate dosarele"
                                             >
-                                            Export Word
+                                            Export Excel
                                 </button>
                                 <button onClick={logout} className="btn-secondary">Deconectare</button>
                       </div>
