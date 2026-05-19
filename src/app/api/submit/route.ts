@@ -28,8 +28,19 @@ import {
 } from '@/lib/centralizator';
 
 export const runtime = 'nodejs';
-// Permite request body-uri mai mari decât default (FormData cu fișiere).
 export const maxDuration = 60;
+
+// Migrare coloane noi (ip_address, user_agent, updated_at)
+const cols = db.prepare('PRAGMA table_info(dosare)').all() as { name: string }[];
+if (!cols.some((c) => c.name === 'ip_address')) {
+  db.exec('ALTER TABLE dosare ADD COLUMN ip_address TEXT');
+}
+if (!cols.some((c) => c.name === 'user_agent')) {
+  db.exec('ALTER TABLE dosare ADD COLUMN user_agent TEXT');
+}
+if (!cols.some((c) => c.name === 'updated_at')) {
+  db.exec('ALTER TABLE dosare ADD COLUMN updated_at TEXT');
+}
 
 async function fileToBuffer(file: File): Promise<Buffer> {
   const ab = await file.arrayBuffer();
@@ -37,6 +48,12 @@ async function fileToBuffer(file: File): Promise<Buffer> {
 }
 
 export async function POST(req: NextRequest) {
+  const ip_address =
+    req.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
+    req.headers.get('x-real-ip') ??
+    'unknown';
+  const user_agent = req.headers.get('user-agent') ?? '';
+
   let form: FormData;
   try {
     form = await req.formData();
@@ -128,7 +145,6 @@ export async function POST(req: NextRequest) {
       );
     }
   }
-  // verificăm magic bytes după ce am citit listă (pentru a evita citirea inutilă dacă pică mai sus)
   const oferteBuffers: { file: File; buf: Buffer; ext: string }[] = [];
   for (const f of oferteFiles) {
     const ext = getExtension(f.name);
@@ -142,24 +158,18 @@ export async function POST(req: NextRequest) {
     oferteBuffers.push({ file: f, buf, ext });
   }
 
-  // --- Pregătire folder ---
-  const folderName = buildFolderName(data.cui, data.denumireFirma);
-  const existing = db
-    .prepare('SELECT id FROM dosare WHERE folder_name = ?')
-    .get(folderName) as { id: number } | undefined;
-  if (existing) {
-    // Pentru MVP refuzăm duplicatele pe același CUI+denumire pentru a evita amestecul de fișiere.
-    return NextResponse.json(
-      {
-        ok: false,
-        error:
-          'Există deja un dosar transmis pentru această firmă. Vă rugăm să contactați consultantul pentru actualizări.',
-      },
-      { status: 409 },
-    );
-  }
+  // --- UPSERT: verifică dacă există dosar cu același CUI ---
+  const cuiSanitized = sanitizeCui(data.cui);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const existingByCui = db.prepare('SELECT id, folder_name FROM dosare WHERE cui = ?').get(cuiSanitized) as any;
 
-  const root = createDosarStructure(folderName);
+  const folderName = existingByCui
+    ? existingByCui.folder_name
+    : buildFolderName(data.cui, data.denumireFirma);
+
+  const root = existingByCui
+    ? getFolderPath(folderName)
+    : createDosarStructure(folderName);
 
   // --- Scriere CI ---
   const ciFinalName = `CI_${sanitizeSegment(data.numeAdmin)}.${ciExt}`;
@@ -179,7 +189,7 @@ export async function POST(req: NextRequest) {
   // --- Construire centralizator ---
   const dataTransmiterii = new Date().toISOString();
   const central: CentralizatorData = {
-    cui: sanitizeCui(data.cui),
+    cui: cuiSanitized,
     denumire_firma: data.denumireFirma,
     a_avut_firma: data.aAvutFirma,
     administrator: data.numeAdmin,
@@ -209,41 +219,78 @@ export async function POST(req: NextRequest) {
     central,
   );
 
-  // --- Inserare în baza de date ---
   const nrFisiere = 1 + oferteSalvate.length;
-  const stmt = db.prepare(`
-    INSERT INTO dosare (
-      folder_name, cui, denumire_firma, a_avut_firma,
-      administrator, cnp, email, telefon,
-      activitate, localitate_judet,
-      cofinantare, punctaj_cofinantare, mentinere_luni, punctaj_mentinere, suma_forfetara,
-      observatii_oferte, fisier_ci, nr_oferte, nr_fisiere,
-      status, creat_la
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Primit', ?)
-  `);
 
-  stmt.run(
-    folderName,
-    central.cui,
-    central.denumire_firma,
-    central.a_avut_firma === 'Da' ? 1 : 0,
-    central.administrator,
-    central.cnp,
-    central.email,
-    central.telefon,
-    central.activitate,
-    central.localitate_judet,
-    central.cofinantare_procent,
-    central.punctaj_cofinantare,
-    central.mentinere_locuri_munca_luni,
-    central.punctaj_mentinere,
-    central.suma_forfetara_80000_lei,
-    central.observatii_oferte,
-    central.fisier_ci,
-    oferteSalvate.length,
-    nrFisiere,
-    central.data_transmiterii,
-  );
+  if (existingByCui) {
+    // UPDATE
+    db.prepare(`
+      UPDATE dosare SET
+        denumire_firma = ?, a_avut_firma = ?, administrator = ?, cnp = ?,
+        email = ?, telefon = ?, activitate = ?, localitate_judet = ?,
+        cofinantare = ?, punctaj_cofinantare = ?, mentinere_luni = ?, punctaj_mentinere = ?,
+        suma_forfetara = ?, observatii_oferte = ?, fisier_ci = ?,
+        nr_oferte = ?, nr_fisiere = ?,
+        ip_address = ?, user_agent = ?,
+        updated_at = datetime('now')
+      WHERE cui = ?
+    `).run(
+      central.denumire_firma,
+      central.a_avut_firma === 'Da' ? 1 : 0,
+      central.administrator,
+      central.cnp,
+      central.email,
+      central.telefon,
+      central.activitate,
+      central.localitate_judet,
+      central.cofinantare_procent,
+      central.punctaj_cofinantare,
+      central.mentinere_locuri_munca_luni,
+      central.punctaj_mentinere,
+      central.suma_forfetara_80000_lei,
+      central.observatii_oferte,
+      central.fisier_ci,
+      oferteSalvate.length,
+      nrFisiere,
+      ip_address,
+      user_agent,
+      cuiSanitized,
+    );
+  } else {
+    // INSERT
+    db.prepare(`
+      INSERT INTO dosare (
+        folder_name, cui, denumire_firma, a_avut_firma,
+        administrator, cnp, email, telefon,
+        activitate, localitate_judet,
+        cofinantare, punctaj_cofinantare, mentinere_luni, punctaj_mentinere, suma_forfetara,
+        observatii_oferte, fisier_ci, nr_oferte, nr_fisiere,
+        status, creat_la, ip_address, user_agent
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Primit', ?, ?, ?)
+    `).run(
+      folderName,
+      cuiSanitized,
+      central.denumire_firma,
+      central.a_avut_firma === 'Da' ? 1 : 0,
+      central.administrator,
+      central.cnp,
+      central.email,
+      central.telefon,
+      central.activitate,
+      central.localitate_judet,
+      central.cofinantare_procent,
+      central.punctaj_cofinantare,
+      central.mentinere_locuri_munca_luni,
+      central.punctaj_mentinere,
+      central.suma_forfetara_80000_lei,
+      central.observatii_oferte,
+      central.fisier_ci,
+      oferteSalvate.length,
+      nrFisiere,
+      central.data_transmiterii,
+      ip_address,
+      user_agent,
+    );
+  }
 
   return NextResponse.json({ ok: true, folder: folderName });
 }
