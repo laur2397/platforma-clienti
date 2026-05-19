@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-slate-50 text-slate-800 antialiased;
+    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+}
+
+@layer components {
+  .label {
+    @apply mb-1 block text-sm font-medium text-slate-700;
+  }
+  .label-required::after {
+    content: ' *';
+    @apply text-red-600;
+  }
+  .input,
+  .textarea,
+  .select {
+    @apply block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm
+           placeholder:text-slate-400
+           focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200
+           disabled:cursor-not-allowed disabled:bg-slate-100;
+  }
+  .textarea {
+    @apply min-h-[6rem];
+  }
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium
+           transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1
+           disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-primary {
+    @apply btn bg-brand-600 text-white hover:bg-brand-700 focus:ring-brand-400;
+  }
+  .btn-secondary {
+    @apply btn bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 focus:ring-brand-300;
+  }
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-400;
+  }
+  .card {
+    @apply rounded-lg border border-slate-200 bg-white p-5 shadow-sm;
+  }
+  .field-error {
+    @apply mt-1 text-xs text-red-600;
+  }
+  .section-title {
+    @apply mb-1 text-lg font-semibold text-slate-900;
+  }
+  .section-help {
+    @apply mb-4 text-sm text-slate-500;
+  }
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+}

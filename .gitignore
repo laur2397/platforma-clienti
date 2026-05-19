@@ -1,0 +1,23 @@
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# fișiere generate / runtime
+uploads/
+data/*.db
+data/*.sqlite
+data/*.sqlite-journal
+
+.env
+.env.local
+.env*.local
+
+*.log
+npm-debug.log*
+.DS_Store
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
