@@ -264,4 +264,4 @@ export default function AdminDashboard({ username }: { username: string }) {
               </div>
         </div>
       );
-}</div>
+}
