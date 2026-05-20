@@ -21,16 +21,17 @@ async function callGeminiWithRetry(url: string, body: object, maxRetries = 3): P
   throw new Error('AI supraincercat momentan. Incearca din nou. ('+lastError+')');
 }
 
-function getOfferParts(folderName: string): object[] {
-  const parts: object[] = [];
+function getOfferParts(folderName: string): { textParts: object[], imageParts: object[] } {
+  const textParts: object[] = [];
+  const imageParts: object[] = [];
   const ofertaDir = path.join(process.cwd(), 'uploads', folderName, '03_Oferte');
-  if (!fs.existsSync(ofertaDir)) return parts;
+  if (!fs.existsSync(ofertaDir)) return { textParts, imageParts };
   const files = fs.readdirSync(ofertaDir);
   if (files.length === 0) {
-    parts.push({text: 'Nicio oferta incarcata.'});
-    return parts;
+    textParts.push({text: 'Nicio oferta incarcata.'});
+    return { textParts, imageParts };
   }
-  parts.push({text: `Oferte incarcate (${files.length} fisiere): ${files.join(', ')}`});
+  textParts.push({text: `Oferte incarcate (${files.length} fisiere): ${files.join(', ')}`});
   for (const file of files) {
     const ext = path.extname(file).toLowerCase();
     if (ext === '.jpg' || ext === '.jpeg' || ext === '.png') {
@@ -39,14 +40,14 @@ function getOfferParts(folderName: string): object[] {
         const imgData = fs.readFileSync(filePath);
         const base64 = imgData.toString('base64');
         const mimeType = ext === '.png' ? 'image/png' : 'image/jpeg';
-        parts.push({text: `[Imagine: ${file}]`});
-        parts.push({inline_data: {mime_type: mimeType, data: base64}});
+        imageParts.push({text: `[Imagine: ${file}]`});
+        imageParts.push({inline_data: {mime_type: mimeType, data: base64}});
       } catch {
-        parts.push({text: `[Eroare citire ${file}]`});
+        textParts.push({text: `[Eroare citire ${file}]`});
       }
     }
   }
-  return parts;
+  return { textParts, imageParts };
 }
 
 export async function POST(req: NextRequest) {
@@ -55,18 +56,21 @@ export async function POST(req: NextRequest) {
   try {
     const { messages, clientCui } = await req.json();
     if (!Array.isArray(messages)) return NextResponse.json({error:'Date invalide'},{status:400});
-    let ctxParts: object[] = [];
+    const isFirstTurn = messages.length === 1;
+    let textCtxParts: object[] = [];
+    let imageCtxParts: object[] = [];
     if (clientCui) {
       const c = db.prepare('SELECT * FROM dosare WHERE cui = ?').get(clientCui) as Record<string,unknown>|undefined;
       if (c) {
         const ctxText = `DATE CLIENT:\nCUI: ${c.cui}\nDenumire: ${c.denumire_firma}\nAdministrator: ${c.administrator}\nCNP: ${c.cnp}\nEmail: ${c.email}\nTelefon: ${c.telefon}\nActivitate: ${c.activitate}\nLocalitate: ${c.localitate_judet}\nCofinantare: ${c.cofinantare}%\nMentinere: ${c.mentinere_luni} luni\nSuma forfetara: ${c.suma_forfetara||'Nu'}\nStatus: ${c.status||'nou'}\nIP: ${c.ip_address||'N/A'}\nDispozitiv: ${c.user_agent||'N/A'}\nCreat la: ${c.creat_la||'N/A'}\nActualizat: ${c.updated_at||'N/A'}\nNr oferte: ${c.nr_oferte||0}\nNr fisiere: ${c.nr_fisiere||0}\nObservatii: ${c.observatii_oferte||'N/A'}`;
-        ctxParts.push({text: ctxText});
+        textCtxParts.push({text: ctxText});
         if (c.folder_name) {
-          const offerParts = getOfferParts(c.folder_name as string);
-          ctxParts = ctxParts.concat(offerParts);
+          const { textParts, imageParts } = getOfferParts(c.folder_name as string);
+          textCtxParts = textCtxParts.concat(textParts);
+          imageCtxParts = imageParts;
         }
       } else {
-        ctxParts.push({text: `Nu exista dosar pentru CUI: ${clientCui}`});
+        textCtxParts.push({text: `Nu exista dosar pentru CUI: ${clientCui}`});
       }
     } else {
       const all = db.prepare('SELECT cui,denumire_firma,status,cofinantare,ip_address,creat_la,nr_oferte FROM dosare ORDER BY creat_la DESC').all() as Record<string,unknown>[];
@@ -75,13 +79,16 @@ export async function POST(req: NextRequest) {
       const lipsesc = all.filter(d => d.status === 'lipsesc documente').length;
       let ctxText = `TOATE DOSARELE (${total} total, ${primite} primite, ${lipsesc} lipsesc documente):\n`;
       ctxText += all.map(d => `- ${d.denumire_firma} (${d.cui}): status=${d.status||'nou'}, ip=${d.ip_address||'N/A'}, oferte=${d.nr_oferte||0}`).join('\n');
-      ctxParts.push({text: ctxText});
+      textCtxParts.push({text: ctxText});
     }
     const contents = messages.map((m:{role:string;content:string}, i:number) => {
       const role = m.role==='assistant'?'model':'user';
       const parts: object[] = [];
-      if (i===0 && role==='user' && ctxParts.length>0) {
-        parts.push(...ctxParts);
+      if (i===0 && role==='user' && textCtxParts.length>0) {
+        parts.push(...textCtxParts);
+        if (isFirstTurn && imageCtxParts.length>0) {
+          parts.push(...imageCtxParts);
+        }
         parts.push({text: '\n\n'});
       }
       parts.push({text: m.content});
