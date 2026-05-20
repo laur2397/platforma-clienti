@@ -7,75 +7,118 @@ import path from 'path';
 const GEMINI_KEY = process.env.GEMINI_API_KEY || '';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
 
-const SYS = `Ești un asistent AI pentru administratorul unei platforme de colectare documente Start-Up Nation.
-Ajuți la gestionarea dosarelor: analizezi documente (CI, oferte, acte), verifici completitudinea, rezumi conținut, identifici probleme.
-Răspunzi întotdeauna în română. Fii concis și practic.`;
+interface GeminiMessage {
+  role: 'user' | 'model';
+  parts: Array<{ text?: string; inline_data?: { mime_type: string; data: string } }>;
+}
 
-async function getClientFiles(cui: string) {
-  const root = path.join(process.cwd(), 'data', 'dosare');
-  const files: {name:string;mimeType:string;data:string}[] = [];
-  if (!fs.existsSync(root)) return files;
-  try {
-    const dirs = fs.readdirSync(root).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
-    for (const dir of dirs) {
-      for (const sub of ['02_CI','03_Oferte','04_Alte_documente']) {
-        const p = path.join(root, dir, sub);
-        if (!fs.existsSync(p)) continue;
-        for (const f of fs.readdirSync(p)) {
-          if (!f.includes(cui)) continue;
-          const fp = path.join(p, f);
-          if (fs.statSync(fp).size > 4*1024*1024) continue;
-          const ext = path.extname(f).toLowerCase();
-          const mime = ext==='.pdf'?'application/pdf':ext==='.png'?'image/png':['.jpg','.jpeg'].includes(ext)?'image/jpeg':'';
-          if (!mime) continue;
-          files.push({name:f, mimeType:mime, data:fs.readFileSync(fp).toString('base64')});
-          if (files.length >= 8) return files;
-        }
+function getClientFiles(cui: string): Array<{ mime_type: string; data: string; name: string }> {
+  const baseDir = path.join(process.cwd(), 'data', 'dosare');
+  const result: Array<{ mime_type: string; data: string; name: string }> = [];
+  if (!fs.existsSync(baseDir)) return result;
+
+  const dateFolders = fs.readdirSync(baseDir).filter(f => /^\d{4}-\d{2}-\d{2}$/.test(f));
+  const subfolders = ['02_CI', '03_Oferte', '04_Alte_documente'];
+  const allowed = ['.pdf', '.jpg', '.jpeg', '.png'];
+  const maxFiles = 8;
+  const maxSize = 4 * 1024 * 1024;
+
+  for (const dateFolder of dateFolders) {
+    if (result.length >= maxFiles) break;
+    for (const sub of subfolders) {
+      if (result.length >= maxFiles) break;
+      const dir = path.join(baseDir, dateFolder, sub);
+      if (!fs.existsSync(dir)) continue;
+      const files = fs.readdirSync(dir).filter(f => f.includes(cui) && allowed.includes(path.extname(f).toLowerCase()));
+      for (const file of files) {
+        if (result.length >= maxFiles) break;
+        const filePath = path.join(dir, file);
+        const stat = fs.statSync(filePath);
+        if (stat.size > maxSize) continue;
+        const ext = path.extname(file).toLowerCase();
+        const mime = ext === '.pdf' ? 'application/pdf' : ext === '.png' ? 'image/png' : 'image/jpeg';
+        const data = fs.readFileSync(filePath).toString('base64');
+        result.push({ mime_type: mime, data, name: file });
       }
     }
-  } catch(e) { console.error('files err',e); }
-  return files;
+  }
+  return result;
+}
+
+async function callGeminiWithRetry(url: string, body: object, maxRetries = 3): Promise<any> {
+  let lastError = '';
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    if (attempt > 0) {
+      await new Promise(r => setTimeout(r, attempt * 3000));
+    }
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (res.status === 503 || res.status === 529) {
+      const errText = await res.text();
+      lastError = `HTTP ${res.status}: ${errText.slice(0, 200)}`;
+      console.warn(`Gemini attempt ${attempt + 1}/${maxRetries} failed (${res.status}), retrying...`);
+      continue;
+    }
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Gemini error ${res.status}: ${errText.slice(0, 400)}`);
+    }
+    return await res.json();
+  }
+  throw new Error(`Modelul AI este supraîncărcat momentan. Încearcă din nou în câteva secunde. (${lastError.slice(0, 100)})`);
 }
 
 export async function POST(req: NextRequest) {
   const session = await getAdminSession();
-  if (!session.userId) return NextResponse.json({error:'Neautorizat'},{status:401});
+  if (!session) return NextResponse.json({ error: 'Neautorizat' }, { status: 401 });
+
   try {
-    const { messages, clientCui } = await req.json();
-    if (!Array.isArray(messages)) return NextResponse.json({error:'Date invalide'},{status:400});
-    const ctxParts: object[] = [];
-    if (clientCui) {
-            const client = db.prepare('SELECT * FROM dosare WHERE cui = ?').get(clientCui) as Record<string,unknown>|undefined;
+    const { messages, cui }: { messages: GeminiMessage[]; cui?: string } = await req.json();
+
+    let systemText = `Ești un asistent administrativ expert pentru o platformă de colectare documente Start-Up Nation.
+Ajuți administratorul să gestioneze dosarele clienților, să verifice completitudinea documentelor și sĠ ofere recomandări.
+Răspunzi in română. Ești concis i profesionist.`;
+
+    if (cui) {
+      const client = (db as any).prepare('SELECT * FROM dosare WHERE cui = ?').get(cui) as any;
       if (client) {
-        ctxParts.push({text:`DATE CLIENT:\nCUI: ${client.cui}\nDenumire: ${client.denumire}\nAdministrator: ${client.administrator}\nContact: ${client.contact}\nCofinanțare: ${client.cofinantare}%\nMenținere: ${client.mentinere} luni\nForfetare: ${client.forfetare?'Da':'Nu'}\nOferte: ${client.fisiere_oferte}\nDescrieri oferte: ${client.fisiere_oferte_desc||'N/A'}\nStatus: ${client.status||'nou'}\nTransmis: ${client.transmis?'Da':'Nu'}\nUltima actualizare: ${client.updated_at||'N/A'}`});
-        const docFiles = await getClientFiles(clientCui);
-        if (docFiles.length > 0) {
-          ctxParts.push({text:`\nDocumente uploadate (${docFiles.length}):`});
-          for (const f of docFiles) {
-            ctxParts.push({text:`[${f.name}]`});
-            ctxParts.push({inline_data:{mime_type:f.mimeType,data:f.data}});
-          }
-        } else {
-          ctxParts.push({text:'\nNu există documente uploadate încă.'});
-        }
+        systemText += `\n\nClient activ: ${client.denumire_firma} (CUI: ${cui})
+Telefon: ${client.telefon || 'n/a'} | Email: ${client.email || 'n/a'}
+J�deț: ${client.judet || 'n/a'} | Localitate: ${client.localitate || 'n/a'}
+Data inregistrare: ${client.created_at || 'n/a'}`;
+        const files = getClientFiles(cui);
+        systemText += files.length > 0
+          ? `\nDocumente disponibile (${files.length}): ${files.map(f => f.name).join(', ')}`
+          : `\nNu exista documente incarcate pentru acest client.`;
       }
     }
-    const contents = messages.map((m:{role:string;content:string}, i:number) => {
-      const role = m.role==='assistant'?'model':'user';
-      const parts: object[] = [];
-      if (i===0 && role==='user' && ctxParts.length>0) parts.push(...ctxParts);
-      parts.push({text: m.content});
-      return {role, parts};
+
+    const contents: GeminiMessage[] = messages.map((m, i) => {
+      if (m.role === 'user' && i === 0 && cui) {
+        const files = getClientFiles(cui);
+        const parts: GeminiMessage['parts'] = [];
+        if (m.parts[0]?.text) parts.push({ text: m.parts[0].text });
+        for (const f of files) parts.push({ inline_data: { mime_type: f.mime_type, data: f.data } });
+        return { role: 'user', parts: parts.length ? parts : m.parts };
+      }
+      return m;
     });
-    const body = {
-      system_instruction: {parts:[{text:SYS}]},
+
+    const geminiBody = {
+      system_instruction: { parts: [{ text: systemText }] },
       contents,
-      generationConfig: {temperature:0.7, maxOutputTokens:2048, topP:0.95}
+      generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
     };
-    const gRes = await fetch(GEMINI_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
-    if (!gRes.ok) { const e=await gRes.text(); console.error('gemini err',e); return NextResponse.json({error:'Eroare AI: '+gRes.status},{status:500}); }
-    const data = await gRes.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nu am putut genera răspuns.';
-    return NextResponse.json({response:text});
-  } catch(e) { console.error('chat err',e); return NextResponse.json({error:'Eroare internă.'},{status:500}); }
+
+    const data = await callGeminiWithRetry(GEMINI_URL, geminiBody);
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Niciun raspuns primit.';
+    return NextResponse.json({ text });
+
+  } catch (err: any) {
+    console.error('Chat error:', err);
+    return NextResponse.json({ error: err?.message || 'Eroare necunoscuta' }, { status: 500 });
+  }
 }
