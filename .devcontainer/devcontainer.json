@@ -1,0 +1,31 @@
+{
+  "name": "Platformă colectare documente",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "Platformă clienți",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": {
+    "server": "npm run dev"
+  },
+  "postAttachCommand": {
+    "hint": "bash -c 'echo; echo \"========================================\"; echo \"Platforma pornește pe portul 3000.\"; echo \"Tab-ul PORTS îți arată URL-ul codespace-ului.\"; echo \"Pentru link partajabil cu oricine: PORTS -> click dreapta pe 3000 -> Port Visibility -> Public.\"; [ -f .env.credentials ] && echo && cat .env.credentials; echo \"========================================\"'"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint"
+      ]
+    }
+  },
+  "hostRequirements": {
+    "cpus": 2,
+    "memory": "4gb"
+  }
+}
