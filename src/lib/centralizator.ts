@@ -19,6 +19,7 @@ export type CentralizatorData = {
   observatii_oferte: string;
   fisier_ci: string | null;
   fisiere_oferte: string[];
+  fisiere_oferte_desc: string[];
   alte_fisiere: string[];
   data_transmiterii: string;
 };
