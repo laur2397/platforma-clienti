@@ -1,5 +1,6 @@
 'use client';
-import UAParser from 'ua-parser-js';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const UAParser = require('ua-parser-js');
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
