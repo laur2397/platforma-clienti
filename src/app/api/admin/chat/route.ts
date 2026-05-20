@@ -23,7 +23,7 @@ async function callGeminiWithRetry(url: string, body: object, maxRetries = 3): P
 
 function getOfferParts(folderName: string): object[] {
   const parts: object[] = [];
-  const ofertaDir = path.join(process.cwd(), 'data', 'dosare', folderName, '03_Oferte');
+  const ofertaDir = path.join(process.cwd(), 'uploads', folderName, '03_Oferte');
   if (!fs.existsSync(ofertaDir)) return parts;
   const files = fs.readdirSync(ofertaDir);
   if (files.length === 0) {
