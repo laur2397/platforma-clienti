@@ -5,6 +5,7 @@ const UAParser = require('ua-parser-js');
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { DosarRow } from '@/lib/db';
+import AiChatPanel from './AiChatPanel';
 
 const STATUS_COLORS: Record<string, string> = {
     'Primit': 'bg-slate-100 text-slate-700',
@@ -46,6 +47,8 @@ export default function AdminDashboard({ username }: { username: string }) {
     const [q, setQ] = useState('');
     const [loading, setLoading] = useState(true);
     const [err, setErr] = useState<string | null>(null);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiCui, setAiCui] = useState('');
 
   async function load(search = '') {
         setLoading(true);
@@ -189,7 +192,8 @@ export default function AdminDashboard({ username }: { username: string }) {
                                             >
                                             Export Excel
                                 </button>
-                                <button onClick={logout} className="btn-secondary">Deconectare</button>
+                                <button onClick={() => setAiOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-3 py-1.5 rounded text-sm">🤖 Asistent AI</button>
+          <button onClick={logout} className="btn-secondary">Deconectare</button>
                       </div>
               </div>
         
@@ -308,6 +312,7 @@ export default function AdminDashboard({ username }: { username: string }) {
                                 </tbody>
                       </table>
               </div>
+      {aiOpen && (<AiChatPanel clients={items.map(d=>({cui:d.cui,denumire:d.denumire_firma}))} onClose={()=>setAiOpen(false)} initialCui={aiCui} />)}
         </div>
       );
 }
