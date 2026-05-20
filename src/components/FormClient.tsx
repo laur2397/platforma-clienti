@@ -171,6 +171,13 @@ export default function FormClient() {
             )}
           </div>
         </div>
+      {cuiExistent && (
+        <div className="rounded-md border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-800">
+          <strong>Dosar existent găsit.</strong> Datele au fost precompletate din dosarul anterior
+          asociat acestui CUI. La trimitere, dosarul va fi actualizat.
+        </div>
+      )}
+
         <fieldset className="mt-4">
           <legend className="label label-required">
             Ați mai avut sau aveți calitatea de asociat/acționar majoritar ori administrator
@@ -400,13 +407,6 @@ export default function FormClient() {
           </span>
         </label>
       </section>
-
-      {cuiExistent && (
-        <div className="rounded-md border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-800">
-          <strong>Dosar existent găsit.</strong> Datele au fost precompletate din dosarul anterior
-          asociat acestui CUI. La trimitere, dosarul va fi actualizat.
-        </div>
-      )}
 
       <div className="flex justify-end">
         <button type="submit" className="btn-primary" disabled={submitting}>

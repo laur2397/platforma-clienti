@@ -1,4 +1,5 @@
 'use client';
+import UAParser from 'ua-parser-js';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -22,12 +23,20 @@ function fmtDate(iso: string | null | undefined): string {
     }
 }
 
+const SAMSUNG: Record<string,string> = {'SM-S911':'Galaxy S23','SM-S916':'Galaxy S23+','SM-S918':'Galaxy S23 Ultra','SM-S921':'Galaxy S24','SM-S926':'Galaxy S24+','SM-S928':'Galaxy S24 Ultra','SM-S931':'Galaxy S25','SM-S936':'Galaxy S25+','SM-S938':'Galaxy S25 Ultra','SM-G991':'Galaxy S21','SM-G996':'Galaxy S21+','SM-G998':'Galaxy S21 Ultra','SM-S901':'Galaxy S22','SM-S906':'Galaxy S22+','SM-S908':'Galaxy S22 Ultra','SM-A546':'Galaxy A54','SM-A556':'Galaxy A55','SM-F731':'Galaxy Z Flip5','SM-F741':'Galaxy Z Flip6','SM-F946':'Galaxy Z Fold5','SM-F956':'Galaxy Z Fold6'};
 function getDevice(ua: string | null | undefined): string {
-    if (!ua) return '—';
-    const u = ua.toLowerCase();
-    if (/bot|crawl|spider|slurp|facebook|preview/i.test(u)) return 'Bot';
-    if (/mobile|android|iphone|ipad|ipod|windows phone/i.test(u)) return 'Mobil';
-    return 'Desktop';
+  if (!ua) return '—';
+  if (/bot|crawl|spider|Googlebot|bingbot/i.test(ua)) return 'Bot/Crawler';
+  const p = new UAParser(ua).getResult();
+  const parts: string[] = [];
+  if (p.device.vendor) {
+    let m = p.device.model || '';
+    if (p.device.vendor === 'Samsung' && m.startsWith('SM-')) m = SAMSUNG[m.slice(0,7)] || m;
+    parts.push(p.device.vendor + (m ? ' ' + m : ''));
+  }
+  if (p.os.name) parts.push(p.os.name + (p.os.version ? ' ' + p.os.version : ''));
+  if (!parts.length) return /mobile|android|iphone|ipad/i.test(ua) ? 'Mobil' : 'Desktop';
+  return parts.join(' · ');
 }
 
 export default function AdminDashboard({ username }: { username: string }) {
