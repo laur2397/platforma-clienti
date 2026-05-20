@@ -178,11 +178,13 @@ export async function POST(req: NextRequest) {
 
   // --- Scriere oferte ---
   const oferteSalvate: string[] = [];
+  const oferteDescrieri: string[] = [];
   oferteBuffers.forEach((entry, idx) => {
     const safeOriginal = buildSafeName(entry.file.name, 'OFERTA');
     const finalName = `OFERTA_${idx + 1}_${safeOriginal}`;
     const fullPath = path.join(root, SUBFOLDERS.oferte, finalName);
     fs.writeFileSync(fullPath, entry.buf);
+    oferteDescrieri.push(String(form.get("oferte_desc_" + oferteSalvate.length) || ""));
     oferteSalvate.push(finalName);
   });
 
@@ -206,6 +208,7 @@ export async function POST(req: NextRequest) {
     observatii_oferte: data.observatiiOferte ?? '',
     fisier_ci: ciFinalName,
     fisiere_oferte: oferteSalvate,
+    fisiere_oferte_desc: oferteDescrieri,
     alte_fisiere: [],
     data_transmiterii: dataTransmiterii,
   };

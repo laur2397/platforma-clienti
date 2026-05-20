@@ -28,7 +28,7 @@ export default function FormClient() {
   const [submitting, setSubmitting] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-  const [oferteList, setOferteList] = useState<File[]>([]);
+  const [oferteList, setOferteList] = useState<{file: File; desc: string}[]>([]);
   const [cuiExistent, setCuiExistent] = useState(false);
 
   function setError(name: string, msg?: string) {
@@ -89,7 +89,7 @@ export default function FormClient() {
     setFieldErrors({});
 
     const fd = new FormData(formRef.current);
-    oferteList.forEach(f => fd.append('oferte', f));
+    oferteList.forEach((item, i) => { fd.append('oferte', item.file); fd.append('oferte_desc_' + i, item.desc || ''); });
 
     // Validări minime client-side (server-ul re-validează).
     const cui = String(fd.get('cui') ?? '').replace(/\D+/g, '');
@@ -309,15 +309,36 @@ export default function FormClient() {
             className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:font-semibold file:bg-blue-50 file:text-blue-700 cursor-pointer border border-gray-300 rounded p-1"
             onChange={(e)=>{
               const picked=Array.from(e.target.files||[]);
-              if(picked.length){setOferteList(prev=>[...prev,...picked]);e.target.value='';}
+              if(picked.length){setOferteList(prev=>[...prev,...picked.map(f=>({file:f,desc:''}))]);e.target.value='';}
             }}
           />
           {oferteList.length>0&&(
             <ul className="mt-2 space-y-1">
-              {oferteList.map((f,idx)=>(
-                <li key={idx} className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded px-3 py-1 text-sm">
-                  <span className="truncate max-w-xs text-gray-700">{f.name}</span>
-                  <button type="button" onClick={()=>setOferteList(prev=>prev.filter((_,i)=>i!==idx))} className="ml-2 text-red-500 hover:text-red-700 font-bold">&#x2715;</button>
+              {oferteList.map((item,idx)=>(
+                <li key={idx} className="bg-blue-50 border border-blue-200 rounded px-3 py-2 text-sm">
+
+                  <div className="flex items-center justify-between">
+
+                    <span className="truncate max-w-xs text-gray-700">{item.file.name}</span>
+
+                    <button type="button" onClick={()=>setOferteList(prev=>prev.filter((_,i)=>i!==idx))} className="ml-2 text-red-500 hover:text-red-700 font-bold">&#x2715;</button>
+
+                  </div>
+
+                  <textarea
+
+                    rows={2}
+
+                    className="mt-1 w-full rounded border border-gray-200 p-1.5 text-xs text-gray-600 placeholder-gray-400 resize-none focus:outline-none focus:ring-1 focus:ring-blue-300"
+
+                    placeholder="Descriere ofertă (opțional)..."
+
+                    value={item.desc}
+
+                    onChange={e=>setOferteList(prev=>prev.map((it,i)=>i===idx?{...it,desc:e.target.value}:it))}
+
+                  />
+
                 </li>
               ))}
             </ul>
