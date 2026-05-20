@@ -27,7 +27,7 @@ const SAMSUNG: Record<string,string> = {'SM-S911':'Galaxy S23','SM-S916':'Galaxy
 function getDevice(ua: string | null | undefined): string {
   if (!ua) return '—';
   if (/bot|crawl|spider|Googlebot|bingbot/i.test(ua)) return 'Bot/Crawler';
-  const p = new UAParser(ua).getResult();
+  const p = (UAParser as any)(ua);
   const parts: string[] = [];
   if (p.device.vendor) {
     let m = p.device.model || '';
